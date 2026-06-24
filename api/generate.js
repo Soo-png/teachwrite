@@ -7,58 +7,44 @@ export default async function handler(req, res) {
   const cfAccount = process.env.CF_ACCOUNT_ID;
 
   if (!cfToken || !cfAccount) {
-    return res.status(500).json({ error: 'API credentials not configured on server.' });
+    return res.status(500).json({ error: `Missing credentials. Token: ${cfToken ? 'OK' : 'MISSING'}, Account: ${cfAccount ? 'OK' : 'MISSING'}` });
   }
 
   const prompt = req.body?.messages?.[0]?.content || '';
+  const url = `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/run/@cf/google/gemma-3-12b-it`;
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfToken}`,
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: 'You are a teacher writing brief student report comments in English.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 300,
+      }),
+    });
 
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/run/@cf/google/gemma-3-12b-it`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cfToken}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an experienced teacher writing formal, warm, and constructive student report comments in English. Be concise.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 400,
-        }),
-        signal: controller.signal,
-      }
-    );
+    const raw = await response.text();
 
-    clearTimeout(timeout);
-
-    const data = await response.json();
+    let data;
+    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
 
     if (!response.ok || !data.success) {
-      const errMsg = data.errors?.[0]?.message || JSON.stringify(data.errors) || 'Cloudflare AI error';
-      return res.status(500).json({ error: errMsg });
+      return res.status(500).json({
+        error: `CF Error ${response.status}: ${JSON.stringify(data.errors || data)}`,
+        debug: { url, status: response.status }
+      });
     }
 
     const text = data.result?.response || '';
-    return res.status(200).json({
-      content: [{ type: 'text', text }]
-    });
+    return res.status(200).json({ content: [{ type: 'text', text }] });
 
   } catch (err) {
-    if (err.name === 'AbortError') {
-      return res.status(500).json({ error: 'Request timed out. Please try again.' });
-    }
-    return res.status(500).json({ error: 'Server error: ' + err.message });
+    return res.status(500).json({ error: 'Fetch failed: ' + err.message });
   }
 }
