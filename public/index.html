@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeachWrite – Student Comment Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap');
+
+  :root {
+    --bg: #F5F7F4;
+    --surface: #FFFFFF;
+    --surface2: #EEF2EE;
+    --teal: #2D7A6B;
+    --teal-light: #E0F0EC;
+    --teal-mid: #4AA090;
+    --amber: #C97D2A;
+    --amber-light: #FDF0E0;
+    --red: #C0403A;
+    --red-light: #FDEAEA;
+    --text: #1A2320;
+    --text-mid: #4A5753;
+    --text-soft: #8A9E99;
+    --border: #D8E4E0;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(45,122,107,0.08);
+    --shadow-md: 0 4px 24px rgba(45,122,107,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  header {
+    background: var(--teal);
+    padding: 20px 24px 18px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+  }
+  .header-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; letter-spacing: -0.3px; }
+  header p { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 1px; }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-badge {
+    width: 28px; height: 28px;
+    background: var(--teal);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 15px; font-weight: 600; color: var(--text); }
+  .card-body { padding: 18px 20px; }
+
+  /* FIELDS */
+  .info-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 150px; }
+  label.field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  input[type="text"], select {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+    appearance: none;
+  }
+  input[type="text"]:focus, select:focus { border-color: var(--teal); background: #fff; }
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-soft);
+    font-size: 13px;
+  }
+
+  /* SUBJECT ROW */
+  .subject-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .subject-row .field { flex: 1; min-width: 160px; }
+  .subject-row .field.custom { flex: 1; min-width: 140px; }
+  #custom-subject-wrap { display: none; }
+
+  /* GENDER */
+  .gender-toggle { display: flex; gap: 8px; }
+  .gender-btn {
+    flex: 1;
+    padding: 9px 0;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+  }
+  .gender-btn.active { background: var(--teal-light); border-color: var(--teal); color: var(--teal); font-weight: 600; }
+
+  /* CATEGORY ACCORDION */
+  .category-item {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .category-item:last-child { margin-bottom: 0; }
+  .category-item.has-selection { border-color: var(--teal-mid); }
+
+  .category-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--surface);
+    transition: background 0.15s;
+  }
+  .category-toggle:hover { background: var(--teal-light); }
+  .category-left { display: flex; align-items: center; gap: 10px; }
+  .cat-icon { font-size: 18px; }
+  .cat-name { font-size: 14px; font-weight: 600; }
+  .cat-count {
+    font-size: 11px;
+    background: var(--teal);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .cat-count.hidden { display: none; }
+  .chevron { font-size: 12px; color: var(--text-soft); transition: transform 0.2s; }
+  .category-item.open .chevron { transform: rotate(180deg); }
+
+  .keywords-panel {
+    display: none;
+    padding: 14px 16px 16px;
+    border-top: 1px solid var(--border);
+    background: #FAFCFA;
+  }
+  .category-item.open .keywords-panel { display: block; }
+
+  .tier-section { margin-bottom: 14px; }
+  .tier-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tier-label.good { color: #2A7A50; }
+  .tier-label.mid  { color: var(--amber); }
+  .tier-label.poor { color: var(--red); }
+  .tier-label::before {
+    content: '';
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .tier-label.good::before { background: #2A7A50; }
+  .tier-label.mid::before  { background: var(--amber); }
+  .tier-label.poor::before { background: var(--red); }
+
+  .keywords-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 4px; }
+
+  .kw-chip {
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .kw-chip.good { background: #E8F5EF; color: #1E6040; border-color: #B8DEC9; }
+  .kw-chip.good.selected { background: #2A7A50; color: #fff; border-color: #2A7A50; }
+  .kw-chip.mid  { background: var(--amber-light); color: #7A4A0A; border-color: #E8C080; }
+  .kw-chip.mid.selected  { background: var(--amber); color: #fff; border-color: var(--amber); }
+  .kw-chip.poor { background: var(--red-light); color: #7A1A18; border-color: #E8AAAA; }
+  .kw-chip.poor.selected { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* ADDITIONAL REMARK per category */
+  .cat-remark-wrap {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .cat-remark-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .cat-remark-label::before { content: '💬'; font-size: 12px; }
+  textarea.cat-remark {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: #fff;
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  textarea.cat-remark:focus { border-color: var(--teal); }
+  textarea.cat-remark::placeholder { color: var(--text-soft); }
+
+  /* GLOBAL TEXTAREA */
+  textarea#extra-notes {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    resize: vertical;
+    min-height: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.55;
+  }
+  textarea#extra-notes:focus { border-color: var(--teal); background: #fff; }
+  textarea#extra-notes::placeholder { color: var(--text-soft); }
+
+  .hint { font-size: 12px; color: var(--text-soft); margin-top: 8px; line-height: 1.5; display: flex; align-items: flex-start; gap: 5px; }
+
+  /* HAMBURGER INFO BOX */
+  .structure-info {
+    background: var(--teal-light);
+    border: 1px solid #A8D8CE;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #1E5A4E;
+    line-height: 1.6;
+  }
+  .structure-info strong { font-weight: 700; }
+  .structure-info ul { margin: 6px 0 0 18px; }
+  .structure-info li { margin-bottom: 2px; }
+
+  /* GENERATE BTN */
+  .generate-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 4px 16px rgba(45,122,107,0.3);
+  }
+  .generate-btn:hover { background: #256658; }
+  .generate-btn:active { transform: scale(0.98); }
+  .generate-btn:disabled { background: var(--text-soft); cursor: not-allowed; box-shadow: none; }
+
+  /* RESULT */
+  .result-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    border: 1.5px solid var(--teal-mid);
+    overflow: hidden;
+    display: none;
+  }
+  .result-card.visible { display: block; }
+  .result-header {
+    background: linear-gradient(135deg, var(--teal) 0%, #1E5E52 100%);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .result-header h3 { color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .result-meta { display: flex; gap: 7px; flex-wrap: wrap; }
+  .meta-tag {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .result-body { padding: 20px; }
+  #comment-text { font-size: 15px; line-height: 1.85; color: var(--text); white-space: pre-wrap; }
+
+  .loading-state { display: flex; align-items: center; gap: 10px; color: var(--text-mid); font-size: 14px; padding: 8px 0; }
+  .dot-pulse { display: flex; gap: 5px; }
+  .dot-pulse span { width: 8px; height: 8px; background: var(--teal); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100%{ opacity:.3; transform:scale(.8); } 40%{ opacity:1; transform:scale(1); } }
+
+  .result-actions {
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .copy-btn {
+    flex: 1; min-width: 140px;
+    padding: 11px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: all 0.18s;
+    border: 1.5px solid var(--teal);
+    background: var(--teal-light);
+    color: var(--teal);
+  }
+  .copy-btn:hover { background: var(--teal); color: #fff; }
+  .copy-btn.copied { background: #2A7A50; color: #fff; border-color: #2A7A50; }
+
+  .regen-btn {
+    flex: 1; min-width: 140px;
+    padding: 11px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: all 0.18s;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-mid);
+  }
+  .regen-btn:hover { background: var(--surface2); border-color: var(--text-soft); }
+
+  /* API BANNER – kept minimal for error states */
+  .api-banner {
+    background: var(--red-light);
+    border: 1.5px solid #E8AAAA;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: none;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .api-banner.visible { display: flex; }
+  .api-banner p { font-size: 13px; color: #7A1A18; line-height: 1.55; }
+
+  @media (max-width: 480px) {
+    .card-body { padding: 14px; }
+    .card-header { padding: 13px 14px; }
+    .result-actions { flex-direction: column; }
+    .copy-btn, .regen-btn { min-width: unset; }
+  }
+
+  /* ── PASSWORD GATE ── */
+  #password-gate {
+    position: fixed;
+    inset: 0;
+    background: var(--teal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 24px;
+  }
+  #password-gate.hidden { display: none; }
+
+  .gate-box {
+    background: #fff;
+    border-radius: 18px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  }
+  .gate-logo {
+    font-size: 36px;
+    margin-bottom: 10px;
+  }
+  .gate-box h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .gate-box p {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .gate-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 16px;
+    font-family: inherit;
+    text-align: center;
+    letter-spacing: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+    background: var(--bg);
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .gate-input:focus { border-color: var(--teal); background: #fff; }
+  .gate-input.error { border-color: var(--red); animation: shake 0.3s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  .gate-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .gate-btn:hover { background: #256658; }
+  .gate-error {
+    font-size: 13px;
+    color: var(--red);
+    margin-top: 10px;
+    min-height: 18px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── PASSWORD GATE ── -->
+<div id="password-gate">
+  <div class="gate-box">
+    <div class="gate-logo">✏️</div>
+    <h2>TeachWrite</h2>
+    <p>This tool is for authorised staff only.<br>Please enter the access password.</p>
+    <input
+      class="gate-input"
+      type="password"
+      id="gate-input"
+      placeholder="Enter password"
+      onkeydown="if(event.key==='Enter') checkPassword()"
+      autocomplete="off"
+    />
+    <button class="gate-btn" onclick="checkPassword()">Enter →</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-icon">✏️</div>
+    <div>
+      <h1>TeachWrite</h1>
+      <p>Student Comment Generator</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Error banner (hidden by default) -->
+  <div class="api-banner" id="error-banner">
+    <p id="error-banner-msg">⚠️ Something went wrong. Please try again.</p>
+  </div>
+
+  <!-- STEP 1: Student Info -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">1</div>
+      <h2>Student Information</h2>
+    </div>
+    <div class="card-body">
+      <div class="info-row" style="margin-bottom:14px;">
+        <div class="field">
+          <label class="field-label">Student Name</label>
+          <input type="text" id="student-name" placeholder="e.g. Ahmad, Sarah…" />
+        </div>
+        <div class="field">
+          <label class="field-label">Gender</label>
+          <div class="gender-toggle">
+            <button class="gender-btn" id="btn-male" onclick="selectGender('male')">♂ Male</button>
+            <button class="gender-btn" id="btn-female" onclick="selectGender('female')">♀ Female</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject -->
+      <div class="subject-row">
+        <div class="field">
+          <label class="field-label">Subject</label>
+          <div class="select-wrap">
+            <select id="subject-select" onchange="onSubjectChange()">
+              <option value="">— Select a subject —</option>
+              <option value="English Language">English Language</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Science">Science</option>
+              <option value="Chinese Language">Chinese Language</option>
+              <option value="Malay Language">Malay Language</option>
+              <option value="Tamil Language">Tamil Language</option>
+              <option value="History">History</option>
+              <option value="Geography">Geography</option>
+              <option value="Social Studies">Social Studies</option>
+              <option value="Art">Art</option>
+              <option value="Music">Music</option>
+              <option value="Physical Education">Physical Education</option>
+              <option value="Design & Technology">Design &amp; Technology</option>
+              <option value="Food & Consumer Education">Food &amp; Consumer Education</option>
+              <option value="Literature">Literature</option>
+              <option value="Higher Chinese">Higher Chinese</option>
+              <option value="Higher Malay">Higher Malay</option>
+              <option value="Higher Tamil">Higher Tamil</option>
+              <option value="other">Other (type below)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field custom" id="custom-subject-wrap">
+          <label class="field-label">Custom Subject Name</label>
+          <input type="text" id="custom-subject" placeholder="e.g. Drama, ICT…" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Performance Categories -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">2</div>
+      <h2>Performance Categories</h2>
+    </div>
+    <div class="card-body" id="categories-container"></div>
+  </div>
+
+  <!-- STEP 3: Overall Additional Notes -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">3</div>
+      <h2>Overall Additional Notes <span style="font-weight:400;color:var(--text-soft)">(Optional)</span></h2>
+    </div>
+    <div class="card-body">
+      <textarea id="extra-notes" placeholder="Add any specific achievements, events, or overarching observations not covered above…"></textarea>
+      <p class="hint">💡 These will be incorporated into the closing section of the comment.</p>
+    </div>
+  </div>
+
+  <!-- GENERATE -->
+  <button class="generate-btn" id="gen-btn" onclick="generateComment()">
+    <span>✨</span> Generate Comment
+  </button>
+
+  <!-- RESULT -->
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <h3>📄 Generated Comment</h3>
+      <div class="result-meta">
+        <span class="meta-tag" id="result-student-tag"></span>
+        <span class="meta-tag" id="result-subject-tag"></span>
+      </div>
+    </div>
+    <div class="result-body">
+      <div id="comment-text"></div>
+    </div>
+    <div class="result-actions">
+      <button class="copy-btn" id="copy-btn" onclick="copyComment()">📋 Copy Comment</button>
+      <button class="regen-btn" onclick="generateComment()">🔄 Regenerate</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── CATEGORIES DATA ─────────────────────────────────────
+const CATEGORIES = [
+  {
+    id: 'attitude',
+    icon: '🎯',
+    name: 'Learning Attitude',
+    remarkPlaceholder: 'e.g. Shows great curiosity during discussions; always volunteers to answer…',
+    keywords: {
+      good: ['attentive','enthusiastic','motivated','self-directed','curious','focused','dedicated','proactive','disciplined','persistent','engaged','responsible','diligent','positive','growth-minded'],
+      mid:  ['inconsistent','passive','easily distracted','needs reminders','selective','average engagement','can improve','sometimes off-task','wavering','dependent','moderate focus','variable','needs encouragement','complacent','hesitant'],
+      poor: ['inattentive','disruptive','unmotivated','disengaged','resistant','apathetic','frequently off-task','dismissive','lazy','disinterested','careless','negative attitude','defiant','unfocused','indifferent']
+    }
+  },
+  {
+    id: 'homework',
+    icon: '📚',
+    name: 'Homework Submission',
+    remarkPlaceholder: 'e.g. Has improved significantly since Term 1; occasionally forgets on Fridays…',
+    keywords: {
+      good: ['punctual','complete','thorough','well-presented','consistent','timely','neat','organised','detailed','always submitted','meticulous','reliable','above expectations','quality work','independent'],
+      mid:  ['sometimes late','occasionally incomplete','acceptable','needs improvement','sporadic','partial submission','average quality','inconsistent','forgetful','needs reminding','basic effort','variable','mediocre','adequate','careless presentation'],
+      poor: ['frequently missing','rarely submits','incomplete','overdue','neglected','poor quality','missing deadlines','unreliable','insufficient','fails to submit','sloppy','careless','habitually late','undone','abandoned']
+    }
+  },
+  {
+    id: 'topicaltest',
+    icon: '📝',
+    name: 'Topical Test',
+    remarkPlaceholder: 'e.g. Scored well in the fractions unit but struggled with decimals…',
+    keywords: {
+      good: ['excellent scores','high achiever','well-prepared','strong recall','sharp','accurate','consistent top marks','outstanding','mastery','quick learner','thorough understanding','precise','confident','exceptional','impressive'],
+      mid:  ['average performance','passing marks','inconsistent','needs revision','satisfactory','borderline','sometimes unprepared','variable results','room for improvement','moderate','adequate','developing','below potential','manageable','fair'],
+      poor: ['failing scores','poor recall','underprepared','very weak','struggles','below minimum','frequently fails','limited retention','unsatisfactory','needs intervention','very low marks','insufficient','far below average','minimal understanding','concerning']
+    }
+  },
+  {
+    id: 'exam',
+    icon: '📋',
+    name: 'Exam Performance',
+    remarkPlaceholder: 'e.g. Performed well in Paper 1 but lost marks on open-ended questions in Paper 2…',
+    keywords: {
+      good: ['distinction','excellent','top of class','well-prepared','strong grasp','high marks','outstanding performance','exceeded expectations','mastery demonstrated','impressive','confident','comprehensive','exemplary','remarkable','stellar'],
+      mid:  ['average','borderline pass','needs more revision','satisfactory','moderate','room to grow','could do better','passing','developing','inconsistent','adequate','fair performance','below potential','improving','needs support'],
+      poor: ['failed','very low marks','significant gaps','needs remediation','below passing','weak','struggling','critical intervention needed','poor performance','unsatisfactory','far below expectations','insufficient','alarming','negligible','must improve urgently']
+    }
+  },
+  {
+    id: 'coursework',
+    icon: '✏️',
+    name: 'Coursework',
+    remarkPlaceholder: 'e.g. Submitted a particularly creative piece for the descriptive writing task…',
+    keywords: {
+      good: ['well-crafted','in-depth','thorough','creative','polished','carefully done','meets all criteria','insightful','structured','high quality','original thinking','detailed','above expectations','commendable','exemplary'],
+      mid:  ['acceptable','average effort','needs more depth','partially complete','basic','surface-level','could be more thorough','satisfactory','room to improve','variable quality','meets minimum','formulaic','adequate','plain','unremarkable'],
+      poor: ['poorly done','rushed','incomplete','lacks effort','sloppy','below standard','careless','insufficient','incoherent','barely attempted','unacceptable','negligent','minimal effort','far below standard','unsatisfactory']
+    }
+  },
+  {
+    id: 'classwork',
+    icon: '🏫',
+    name: 'Classwork',
+    remarkPlaceholder: 'e.g. Completes tasks ahead of time and helps peers; could share ideas more verbally…',
+    keywords: {
+      good: ['actively participates','contributes ideas','on-task','helpful to peers','quick to complete','engaged','takes initiative','asks good questions','collaborative','focused','productive','demonstrates understanding','responsive','sharp','reliable'],
+      mid:  ['sometimes participates','occasionally off-task','needs prompting','average contribution','inconsistent','passive at times','variable pace','partially engaged','selective participation','needs encouragement','average productivity','can do better','dependent on teacher','distracted at times','mediocre'],
+      poor: ['rarely participates','frequently off-task','uncooperative','disruptive','disengaged','slow to start','avoids tasks','ignores instructions','minimal contribution','refuses to engage','wastes class time','poor effort','problematic','inattentive','counterproductive']
+    }
+  },
+  {
+    id: 'skills',
+    icon: '🛠️',
+    name: 'Skills',
+    remarkPlaceholder: 'e.g. Demonstrates excellent laboratory technique; data recording needs attention…',
+    keywords: {
+      good: ['highly skilled','technically proficient','excellent execution','creative application','accurate','precise','strong command','confident handling','exceptional dexterity','innovative','fluid','masterful','well-developed','polished','versatile'],
+      mid:  ['developing','adequate skill','needs more practice','average proficiency','functional','basic competence','inconsistent technique','partially developed','requires guidance','improving','fair','manageable','satisfactory skill level','variable','still building'],
+      poor: ['very weak skill','lacks basic technique','needs intensive support','poor execution','underdeveloped','struggling','far behind','minimal skill','incorrect technique','unable to perform independently','very limited','insufficient','poor coordination','needs reteaching','alarming gaps']
+    }
+  },
+  {
+    id: 'theory',
+    icon: '📖',
+    name: 'Theory',
+    remarkPlaceholder: 'e.g. Can recall definitions well but needs to practise applying concepts to new contexts…',
+    keywords: {
+      good: ['excellent conceptual grasp','well-versed','insightful','articulate','strong foundation','demonstrates deep understanding','applies knowledge','analytical','connects concepts','thoughtful','clear explanations','thorough knowledge','academic strength','comprehensive','intellectually curious'],
+      mid:  ['basic understanding','surface-level knowledge','needs reinforcement','average grasp','partially understood','inconsistent','requires revision','can explain simply','limited depth','needs more reading','fair knowledge','developing','adequate','incomplete understanding','variable'],
+      poor: ['very limited understanding','confused','unable to explain','poor theoretical base','significant gaps','struggles with concepts','needs reteaching','no foundation','memorises without understanding','very weak','cannot apply knowledge','insufficient','alarming','fails to grasp','requires urgent support']
+    }
+  },
+  {
+    id: 'project',
+    icon: '🗂️',
+    name: 'Project',
+    remarkPlaceholder: 'e.g. Led the group effectively during the science model project; presentation was confident…',
+    keywords: {
+      good: ['outstanding output','well-researched','highly organised','creative','collaborative','takes ownership','meets deadlines','thorough','innovative','detailed planning','strong presentation','exceeds expectations','initiative shown','impactful','self-motivated'],
+      mid:  ['adequate effort','partially completed','needs more depth','some collaboration','met basic requirements','average quality','inconsistent planning','satisfactory output','could be more organised','needs guidance','surface-level research','variable contribution','acceptable','room to improve','dependent'],
+      poor: ['poorly executed','incomplete','minimal effort','unorganised','fails to collaborate','misses deadlines','below standard','lacks planning','insufficient research','very weak output','careless','unsatisfactory','barely attempted','neglected','requires significant support']
+    }
+  }
+];
+
+let selectedGender = null;
+let selectedKeywords = {};
+let categoryRemarks = {};
+
+// ─── INIT ─────────────────────────────────────────────────
+function init() {
+  const container = document.getElementById('categories-container');
+  CATEGORIES.forEach(cat => {
+    selectedKeywords[cat.id] = [];
+    categoryRemarks[cat.id] = '';
+    container.appendChild(buildCategoryEl(cat));
+  });
+}
+
+function buildCategoryEl(cat) {
+  const item = document.createElement('div');
+  item.className = 'category-item';
+  item.id = 'cat-' + cat.id;
+
+  const tiers = [
+    { key: 'good', label: '👍 Positive' },
+    { key: 'mid',  label: '🤔 Average' },
+    { key: 'poor', label: '⚠️ Needs Improvement' }
+  ];
+
+  let tiersHTML = '';
+  tiers.forEach(t => {
+    tiersHTML += `<div class="tier-section">
+      <div class="tier-label ${t.key}">${t.label}</div>
+      <div class="keywords-grid">
+        ${cat.keywords[t.key].map(kw =>
+          `<span class="kw-chip ${t.key}" data-cat="${cat.id}" data-kw="${kw}" onclick="toggleKw(this)">${kw}</span>`
+        ).join('')}
+      </div>
+    </div>`;
+  });
+
+  // Per-category remark
+  const remarkHTML = `<div class="cat-remark-wrap">
+    <div class="cat-remark-label">Additional Remark for ${cat.name}</div>
+    <textarea class="cat-remark" id="remark-${cat.id}" placeholder="${cat.remarkPlaceholder}" oninput="categoryRemarks['${cat.id}']=this.value"></textarea>
+  </div>`;
+
+  item.innerHTML = `
+    <div class="category-toggle" onclick="toggleCat('${cat.id}')">
+      <div class="category-left">
+        <span class="cat-icon">${cat.icon}</span>
+        <span class="cat-name">${cat.name}</span>
+        <span class="cat-count hidden" id="count-${cat.id}">0</span>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="keywords-panel">
+      ${tiersHTML}
+      ${remarkHTML}
+    </div>
+  `;
+  return item;
+}
+
+function toggleCat(id) {
+  document.getElementById('cat-' + id).classList.toggle('open');
+}
+
+function toggleKw(chip) {
+  const cat = chip.dataset.cat;
+  const kw  = chip.dataset.kw;
+  chip.classList.toggle('selected');
+  const arr = selectedKeywords[cat];
+  const idx = arr.indexOf(kw);
+  if (idx === -1) arr.push(kw); else arr.splice(idx, 1);
+  updateCount(cat);
+}
+
+function updateCount(catId) {
+  const n = selectedKeywords[catId].length;
+  const el = document.getElementById('count-' + catId);
+  el.textContent = n;
+  el.classList.toggle('hidden', n === 0);
+  document.getElementById('cat-' + catId).classList.toggle('has-selection', n > 0);
+}
+
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('btn-male').classList.toggle('active', g === 'male');
+  document.getElementById('btn-female').classList.toggle('active', g === 'female');
+}
+
+function onSubjectChange() {
+  const val = document.getElementById('subject-select').value;
+  document.getElementById('custom-subject-wrap').style.display = val === 'other' ? 'flex' : 'none';
+}
+
+function getSubject() {
+  const sel = document.getElementById('subject-select').value;
+  if (sel === 'other') return document.getElementById('custom-subject').value.trim() || 'the subject';
+  return sel || '';
+}
+
+// ─── GENERATE ─────────────────────────────────────────────
+async function generateComment() {
+  const name = document.getElementById('student-name').value.trim();
+  if (!name)          { alert('Please enter the student\'s name.'); return; }
+  if (!selectedGender){ alert('Please select the student\'s gender.'); return; }
+
+  const activeCats = CATEGORIES.filter(c =>
+    selectedKeywords[c.id].length > 0 || (categoryRemarks[c.id] && categoryRemarks[c.id].trim())
+  );
+  if (activeCats.length === 0) { alert('Please select at least a few keywords or add remarks in one category.'); return; }
+
+  const subject = getSubject();
+  const pronoun  = selectedGender === 'male' ? 'he/him/his' : 'she/her/hers';
+  const he       = selectedGender === 'male' ? 'He'  : 'She';
+  const his      = selectedGender === 'male' ? 'his' : 'her';
+  const him      = selectedGender === 'male' ? 'him' : 'her';
+
+  // Build per-category breakdown for prompt
+  const catDetails = activeCats.map(c => {
+    const kws    = selectedKeywords[c.id].length > 0 ? `Keywords: ${selectedKeywords[c.id].join(', ')}` : '';
+    const remark = (categoryRemarks[c.id] || '').trim();
+    const parts  = [kws, remark ? `Teacher's note: ${remark}` : ''].filter(Boolean).join(' | ');
+    return `• ${c.name}: ${parts}`;
+  }).join('\n');
+
+  const extraNotes = document.getElementById('extra-notes').value.trim();
+  const subjectLine = subject ? `The student's subject is: ${subject}.` : '';
+
+  const prompt = `You are an experienced, caring teacher writing a formal end-of-term report comment for a student. Your task is to produce a well-structured, fluent, and constructive English comment following the HAMBURGER METHOD described below.
+
+STUDENT: ${name}
+PRONOUNS: ${pronoun} (use consistently throughout)
+${subjectLine}
+
+PERFORMANCE DATA PROVIDED BY THE TEACHER:
+${catDetails}${extraNotes ? `\n\nOverall additional notes: ${extraNotes}` : ''}
+
+---
+HAMBURGER METHOD – Structure your comment exactly as follows:
+
+1. TOP BUN – Opening sentence: Give a warm, positive overall impression of the student's general performance in ${subject || 'the subject'}. Mention their overall effort or character. This sentence sets the tone.
+
+2. FILLING – Body (2–4 sentences): Break down specific categories from the data above. Elaborate meaningfully on each area highlighted — do not just list keywords; explain what they mean in practice. Naturally weave the keywords and teacher's notes into coherent observations. Where both strengths and weaknesses exist across different categories, address both. Maintain good sentence flow and logical transitions between points.
+
+3. BOTTOM BUN – Closing (2 sentences):
+   (a) Identify 1–2 clear, specific areas for improvement and briefly suggest how ${he} can work on them.
+   (b) End with a sincere, encouraging sentence that motivates the student to keep growing.
+
+---
+STYLE GUIDELINES:
+- Write in formal, warm educator language (not overly stiff, not casual)
+- Do NOT begin with the student's name
+- Use ${name} only once, naturally within the comment
+- Avoid bullet points or numbered lists — write in full paragraphs
+- Total length: 6–9 sentences
+- Output ONLY the comment text. No title, no label, no preamble.`;
+
+  // UI
+  const resultCard  = document.getElementById('result-card');
+  const commentText = document.getElementById('comment-text');
+  resultCard.classList.add('visible');
+  document.getElementById('result-student-tag').textContent = `${name} · ${selectedGender === 'male' ? 'Male' : 'Female'}`;
+  document.getElementById('result-subject-tag').textContent = subject || 'No subject selected';
+  commentText.innerHTML = `<div class="loading-state"><div class="dot-pulse"><span></span><span></span><span></span></div> Crafting comment…</div>`;
+  resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const genBtn = document.getElementById('gen-btn');
+  genBtn.disabled = true;
+  genBtn.innerHTML = '<span>⏳</span> Generating…';
+
+  try {
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error?.message || 'Server error');
+    }
+
+    const data = await resp.json();
+    const text = data.content.map(b => b.text || '').join('');
+    commentText.textContent = text;
+    document.getElementById('error-banner').classList.remove('visible');
+
+  } catch (err) {
+    commentText.innerHTML = '';
+    const banner = document.getElementById('error-banner');
+    document.getElementById('error-banner-msg').textContent = '⚠️ ' + err.message + '. Please try again or contact the administrator.';
+    banner.classList.add('visible');
+  }
+
+  genBtn.disabled = false;
+  genBtn.innerHTML = '<span>✨</span> Generate Comment';
+}
+
+// ─── COPY ─────────────────────────────────────────────────
+function copyComment() {
+  const text = document.getElementById('comment-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = '📋 Copy Comment'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── PASSWORD GATE ────────────────────────────────────────
+// The password is fetched from the server so it's never visible in the code.
+async function initGate() {
+  // If already unlocked in this session, skip gate
+  if (sessionStorage.getItem('tw_auth') === 'ok') {
+    document.getElementById('password-gate').classList.add('hidden');
+    return;
+  }
+}
+
+async function checkPassword() {
+  const input = document.getElementById('gate-input');
+  const errorEl = document.getElementById('gate-error');
+  const val = input.value.trim();
+  if (!val) return;
+
+  try {
+    const resp = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: val })
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      sessionStorage.setItem('tw_auth', 'ok');
+      document.getElementById('password-gate').classList.add('hidden');
+      errorEl.textContent = '';
+    } else {
+      input.classList.add('error');
+      errorEl.textContent = 'Incorrect password. Please try again.';
+      input.value = '';
+      setTimeout(() => input.classList.remove('error'), 400);
+    }
+  } catch (e) {
+    errorEl.textContent = 'Connection error. Please refresh and try again.';
+  }
+}
+
+initGate();
+init();
+</script>
+</body>
+</html>
