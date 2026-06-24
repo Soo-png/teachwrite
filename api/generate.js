@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   const prompt = req.body?.messages?.[0]?.content || '';
-  const url = `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/run/@cf/google/gemma-3-12b-it`;
+  https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/run/@cf/mistral/mistral-7b-instruct-v0.1;
 
   try {
     const response = await fetch(url, {
