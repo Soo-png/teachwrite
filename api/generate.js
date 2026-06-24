@@ -13,8 +13,11 @@ export default async function handler(req, res) {
   const prompt = req.body?.messages?.[0]?.content || '';
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
+      `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/run/@cf/google/gemma-3-12b-it`,
       {
         method: 'POST',
         headers: {
@@ -25,22 +28,25 @@ export default async function handler(req, res) {
           messages: [
             {
               role: 'system',
-              content: 'You are an experienced teacher writing formal, warm, and constructive student report comments in English.'
+              content: 'You are an experienced teacher writing formal, warm, and constructive student report comments in English. Be concise.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 600,
+          max_tokens: 400,
         }),
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeout);
 
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      const errMsg = data.errors?.[0]?.message || 'Cloudflare AI error';
+      const errMsg = data.errors?.[0]?.message || JSON.stringify(data.errors) || 'Cloudflare AI error';
       return res.status(500).json({ error: errMsg });
     }
 
@@ -50,6 +56,9 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
+    if (err.name === 'AbortError') {
+      return res.status(500).json({ error: 'Request timed out. Please try again.' });
+    }
     return res.status(500).json({ error: 'Server error: ' + err.message });
   }
 }
